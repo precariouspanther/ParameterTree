@@ -260,7 +260,9 @@ class ParameterTree implements \ArrayAccess
     {
         $total = count($this->values);
         foreach ($this->values as $value) {
-            $total += $value->count();
+            if ($value instanceof ParameterTree) {
+                $total += $value->count();
+            }
         }
         return $total;
     }
@@ -288,7 +290,7 @@ class ParameterTree implements \ArrayAccess
      */
     public function getBoolean($key, $default = false)
     {
-        return filter_var($this->get($key, $default), FILTER_VALIDATE_BOOLEAN);
+        return (bool)($this->get($key, $default));
     }
 
     /**
@@ -309,28 +311,6 @@ class ParameterTree implements \ArrayAccess
             );
         }
         return strval($value);
-    }
-
-    /**
-     * Fetch a value including only alpha characters
-     * @param string $key
-     * @param string $default
-     * @return string
-     */
-    public function getAlpha($key, $default = '')
-    {
-        return preg_replace('/[^[:alpha:]]/', '', $this->getString($key, $default));
-    }
-
-    /**
-     * Fetch a value including only alpha-numeric characters
-     * @param string $key
-     * @param string $default
-     * @return string
-     */
-    public function getAlphaNumeric($key, $default = '')
-    {
-        return preg_replace('/[^[:alnum:]]/', '', $this->getString($key, $default));
     }
 
     /*

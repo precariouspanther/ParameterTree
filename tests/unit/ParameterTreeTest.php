@@ -36,11 +36,8 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals("string", $tree->get("test5", "string"));
         $this->assertNull($tree->get("test5"));
 
-
         //toArray should return exactly what we provided
         $this->assertEquals($this->getDummyArray(), $tree->toArray());
-
-
     }
 
     public function testChange()
@@ -94,6 +91,12 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testCount()
+    {
+        $tree = \Arcanum\ParameterTree\ParameterTree::CreateFromArray($this->getDummyArray());
+        $this->assertEquals(7, $tree->count());
+    }
+
     public function testFind()
     {
         $tree = \Arcanum\ParameterTree\ParameterTree::CreateFromArray($this->getDummyArray());
@@ -118,6 +121,40 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         unset($tree['test2.test']);
         $this->assertNull($tree->get("test2.test"));
 
+    }
+
+    public function testTypecast()
+    {
+        $tree = new \Arcanum\ParameterTree\ParameterTree();
+        $tree->set("branch.val1", 0);
+        $tree->set("branch.val2", "true");
+        $tree->set("branch.val3", "5 apples");
+        $tree->set("branch.val4", false);
+        $tree->set("branch.val5", '!!!²blah');
+
+        $this->assertFalse($tree->getBoolean("branch.val1"));
+        $this->assertTrue($tree->getBoolean("branch.val2"));
+        $this->assertTrue($tree->getBoolean("branch.val3"));
+        $this->assertFalse($tree->getBoolean("branch.val4"));
+
+        $this->assertEquals(5,$tree->getInt("branch.val3"));
+
+        $this->assertEquals("0",$tree->getString("branch.val1"));
+        $this->assertEquals("true",$tree->getString("branch.val2"));
+        $this->assertEquals("5 apples",$tree->getString("branch.val3"));
+        $this->assertEquals("",$tree->getString("branch.val4"));
+        $this->assertEquals('!!!²blah',$tree->getString("branch.val5"));
+
+    }
+
+    /**
+     * @expectedException Exception
+     * @throws Exception
+     */
+    public function testInvalidString(){
+        $tree = new \Arcanum\ParameterTree\ParameterTree();
+        $tree->set("trunk.branch.value",123);
+        $tree->getString("trunk");
     }
 
     public function testGetKeys()

@@ -252,6 +252,87 @@ class ParameterTree implements \ArrayAccess
         );
     }
 
+    /**
+     * Fetch the number of values stored on or below this branch
+     * @return int
+     */
+    public function count()
+    {
+        $total = count($this->values);
+        foreach ($this->values as $value) {
+            $total += $value->count();
+        }
+        return $total;
+    }
+
+    /*
+     * Typecasted accessors
+     */
+
+    /**
+     * Fetch a value as an integer
+     * @param string $key
+     * @param int $default
+     * @return int
+     */
+    public function getInt($key, $default = 0)
+    {
+        return (int)$this->get($key, $default);
+    }
+
+    /**
+     * Fetch a value as a boolean
+     * @param string $key
+     * @param bool $default
+     * @return bool
+     */
+    public function getBoolean($key, $default = false)
+    {
+        return filter_var($this->get($key, $default), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Fetch a value as a string
+     * @param string $key
+     * @param string $default
+     * @return string
+     * @throws Exception
+     */
+    public function getString($key, $default = '')
+    {
+        $value = $this->get($key, $default);
+        if (!is_scalar($value)) {
+            throw new Exception(
+                "Requested $key as a string from ParameterTree but the stored value for this key is a " . gettype(
+                    $value
+                )
+            );
+        }
+        return strval($value);
+    }
+
+    /**
+     * Fetch a value including only alpha characters
+     * @param string $key
+     * @param string $default
+     * @return string
+     */
+    public function getAlpha($key, $default = '')
+    {
+        return preg_replace('/[^[:alpha:]]/', '', $this->getString($key, $default));
+    }
+
+    /**
+     * Fetch a value including only alpha-numeric characters
+     * @param string $key
+     * @param string $default
+     * @return string
+     */
+    public function getAlphaNumeric($key, $default = '')
+    {
+        return preg_replace('/[^[:alnum:]]/', '', $this->getString($key, $default));
+    }
+
     /*
      * ArrayAccess methods
      */

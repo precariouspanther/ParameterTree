@@ -26,7 +26,7 @@ var_dump($config->getArray()); // ["master"=>["host"=>"db.com","user"=>"DB-DUDE"
 ```php
 $session = new ParameterTree($_SESSION);
 echo $session->get('Security.CurrentUser.email'); // john@doe.com
-var_dump($session->get('Security.CurrentUser'); // ["email"=>"john@doe.com","hash"=>"4DFBT7W4567M23457N345678N345687"]
+json_encode($session->get('Security.CurrentUser'); // {"email":"john@doe.com","hash":"4DFBT7W4567M23457N345678N345687"}
 ```
 
 

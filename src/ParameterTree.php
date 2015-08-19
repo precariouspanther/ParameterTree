@@ -26,12 +26,15 @@ class ParameterTree implements \ArrayAccess
     protected $namespaceSeparator = ".";
 
     /**
-     * @param string $namespace The namespace to use to separate tree branches (defaults to ".")
+     * @param string $namespaceSeparator The namespace to use to separate tree branches (defaults to ".")
      * @param ParameterTree $parentBranch
      */
-    public function __construct($namespace = ".", ParameterTree $parentBranch = null)
+    public function __construct($namespaceSeparator = ".", ParameterTree $parentBranch = null)
     {
-        $this->namespaceSeparator = $namespace;
+        if(!is_string($namespaceSeparator)){
+            throw new \InvalidArgumentException("Namespace Separator must be a string");
+        }
+        $this->namespaceSeparator = $namespaceSeparator;
         $this->parentBranch = $parentBranch;
     }
 
@@ -44,7 +47,7 @@ class ParameterTree implements \ArrayAccess
      */
     public static function CreateFromArray(array $parameterArray, $namespace = ".")
     {
-        $tree = new ParameterTree($namespace);
+        $tree = new static($namespace);
         foreach ($parameterArray as $arrayKey => $arrayValue) {
             $tree->set($arrayKey, $arrayValue);
         }

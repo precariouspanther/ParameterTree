@@ -6,7 +6,7 @@ ParameterTree is a multi-dimensional, namespaced parameter bag simplifying acces
 ## Basic Usage
 
 ```php
-$dbConfig = new ParameterTree(
+$dbConfig = ParameterTree::CreateFromArray(
     [   
         "master"=>[
             "host"=>"db.com",
@@ -24,7 +24,7 @@ var_dump($config->getArray()); // ["master"=>["host"=>"db.com","user"=>"DB-DUDE"
 
 
 ```php
-$session = new ParameterTree($_SESSION);
+$session = arameterTree::CreateFromArray($_SESSION);
 echo $session->get('Security.CurrentUser.email'); // john@doe.com
 json_encode($session->get('Security.CurrentUser'); // {"email":"john@doe.com","hash":"4DFBT7W4567M23457N345678N345687"}
 ```

@@ -125,7 +125,7 @@ class ParameterTree implements \ArrayAccess
     {
         list($localKey, $remainderKey) = $this->getKeyParts($key);
 
-        if ($remainderKey) {
+        if ($remainderKey!==null) {
             //Namespaced key
             if (!isset($this->values[$localKey]) || !($this->values[$localKey] instanceof ParameterTree)) {
                 $this->values[$localKey] = new ParameterTree($this->namespaceSeparator, $this);

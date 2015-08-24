@@ -81,7 +81,7 @@ class ParameterTree implements \ArrayAccess
         list($localKey, $remainderKey) = $this->getKeyParts($key);
         if (isset($this->values[$localKey])) {
             $localValue = $this->values[$localKey];
-            if ($remainderKey) {
+            if ($remainderKey!==null) {
                 //We have a subkey, traverse down the ParameterTree branch to find the value
                 if (!$localValue instanceof ParameterTree) {
                     //Requested subbranch doesn't exist
@@ -103,7 +103,7 @@ class ParameterTree implements \ArrayAccess
     public function delete($key)
     {
         list($localKey, $remainderKey) = $this->getKeyParts($key);
-        if ($remainderKey) {
+        if ($remainderKey!==null) {
             if (isset($this->values[$localKey]) && $this->values[$localKey] instanceof ParameterTree) {
                 $this->values[$localKey]->delete($remainderKey);
             }

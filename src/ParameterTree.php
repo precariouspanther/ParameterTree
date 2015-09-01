@@ -97,6 +97,33 @@ class ParameterTree implements \ArrayAccess
     }
 
     /**
+     * @param string $key
+     * @return ParameterTree|mixed
+     */
+    public function getBranch($key)
+    {
+        list($localKey, $remainderKey) = $this->getKeyParts($key);
+        if (isset($this->values[$localKey])) {
+            $localValue = $this->values[$localKey];
+            if ($remainderKey) {
+                //We have a subkey, traverse down the ParameterTree to find the requested branch
+                if (!$localValue instanceof ParameterTree) {
+                    //Requested subbranch doesn't exist
+                    throw new \InvalidArgumentException("Invalid getTree call - $key does not exist under " . $this->getPath() . ".");
+                }
+                return $localValue->getBranch($remainderKey);
+            } else {
+                //We are accessing the value on this branch.
+                if(!($localValue instanceof ParameterTree)){
+                    throw new \InvalidArgumentException("Invalid getTree call - $key is a value, not a branch - under " . $this->getPath() . ".");
+                }
+                return $localValue;
+            }
+        }
+        throw new \InvalidArgumentException("Invalid getTree call - $key does not exist under " . $this->getPath() . ".");
+    }
+
+    /**
      * Delete a value(or entire branch) from the ParameterTree
      * @param string $key The key to remove relative to the current branch
      */

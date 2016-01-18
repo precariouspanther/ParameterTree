@@ -42,7 +42,7 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
      * Create a new ParameterTree from a multi-dimensional array
      * @param array $parameterArray
      * @param string $namespace
-     * @return ParameterTree
+     * @return static
      * @throws Exception
      */
     public static function CreateFromArray(array $parameterArray, $namespace = ".")

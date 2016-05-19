@@ -120,6 +120,9 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
                 return $localValue;
             }
         }
+        if ($this->values[$localKey] === null){
+            return null;
+        }
         throw new \InvalidArgumentException("Invalid getTree call - $key does not exist under " . $this->getPath() . ".");
     }
 

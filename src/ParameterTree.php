@@ -164,8 +164,12 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
             return;
         }
         if (is_array($value)) {
-            foreach ($value as $valKey => $valValue) {
-                $this->set($localKey . $this->namespaceSeparator . $valKey, $valValue, $force);
+            if (count($value) > 0) {
+                foreach ($value as $valKey => $valValue) {
+                    $this->set($localKey . $this->namespaceSeparator . $valKey, $valValue, $force);
+                }
+            } else {
+                $this->values[$localKey] = new ParameterTree($this->namespaceSeparator, $this);
             }
             return;
         }

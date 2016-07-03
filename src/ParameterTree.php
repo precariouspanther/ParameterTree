@@ -7,18 +7,17 @@
 
 namespace Arcanum\ParameterTree;
 
+use Arcanum\ParameterTree\Exception\ValueExistsException;
 use Exception;
 
-class ParameterTree implements \ArrayAccess,  \JsonSerializable
+class ParameterTree implements \ArrayAccess, \JsonSerializable
 {
     /**
      * @var ParameterTree[]|mixed[]
      */
     protected $values = [];
-    /**
-     * @var ParameterTree
-     */
-    protected $parentBranch = null;
+
+    protected $path = "";
     /**
      * The namespace to use to separate tree branches (defaults to ".")
      * @var string
@@ -26,32 +25,27 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
     protected $namespaceSeparator = ".";
 
     /**
+     * @param array|\Traversable $data
      * @param string $namespaceSeparator The namespace to use to separate tree branches (defaults to ".")
-     * @param ParameterTree $parentBranch
+     * @param string $path Optional path to this branch relative to the tree root.
      */
-    public function __construct($namespaceSeparator = ".", ParameterTree $parentBranch = null)
+    public function __construct($data = [], string $namespaceSeparator = ".", string $path = "")
     {
-        if(!is_string($namespaceSeparator)){
-            throw new \InvalidArgumentException("Namespace Separator must be a string");
-        }
         $this->namespaceSeparator = $namespaceSeparator;
-        $this->parentBranch = $parentBranch;
+        $this->path = $path;
+        $this->setFromArray($data);
     }
 
     /**
-     * Create a new ParameterTree from a multi-dimensional array
-     * @param array $parameterArray
-     * @param string $namespace
-     * @return static
+     * Set the local values in this tree from an array/Traversable object
+     * @param array|\Traversable $data
      * @throws Exception
      */
-    public static function CreateFromArray(array $parameterArray, $namespace = ".")
+    public function setFromArray($data)
     {
-        $tree = new static($namespace);
-        foreach ($parameterArray as $arrayKey => $arrayValue) {
-            $tree->set($arrayKey, $arrayValue);
+        foreach ($data as $arrayKey => $arrayValue) {
+            $this->set($arrayKey, $arrayValue);
         }
-        return $tree;
     }
 
     /**
@@ -68,6 +62,7 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
                 $values[$valKey] = $value;
             }
         }
+
         return $values;
     }
 
@@ -81,18 +76,20 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
         list($localKey, $remainderKey) = $this->getKeyParts($key);
         if (isset($this->values[$localKey])) {
             $localValue = $this->values[$localKey];
-            if ($remainderKey!==null) {
+            if ($remainderKey !== null) {
                 //We have a subkey, traverse down the ParameterTree branch to find the value
                 if (!$localValue instanceof ParameterTree) {
                     //Requested subbranch doesn't exist
                     return $default;
                 }
+
                 return $localValue->get($remainderKey, $default);
             } else {
                 //We are accessing the value on this branch. Convert the entire subbranch to an array if it is a ParameterTree
                 return ($localValue instanceof ParameterTree) ? $localValue->toArray() : $localValue;
             }
         }
+
         return $default;
     }
 
@@ -109,21 +106,23 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
                 //We have a subkey, traverse down the ParameterTree to find the requested branch
                 if (!$localValue instanceof ParameterTree) {
                     //Requested subbranch doesn't exist
-                    throw new \InvalidArgumentException("Invalid getTree call - $key does not exist under " . $this->getPath() . ".");
+                    throw new \InvalidArgumentException("Invalid key - '$key' does not exist under " . $this->getPath() . ".");
                 }
+
                 return $localValue->getBranch($remainderKey);
             } else {
                 //We are accessing the value on this branch.
-                if(!($localValue instanceof ParameterTree)){
-                    throw new \InvalidArgumentException("Invalid getTree call - $key is a value, not a branch - under " . $this->getPath() . ".");
+                if (!($localValue instanceof ParameterTree)) {
+                    throw new \InvalidArgumentException("Invalid key - '$key' is a value, not a branch - under " . $this->getPath() . ".");
                 }
+
                 return $localValue;
             }
         }
-        if ($this->values[$localKey] === null){
+        if ($this->values[$localKey] === null) {
             return null;
         }
-        throw new \InvalidArgumentException("Invalid getTree call - $key does not exist under " . $this->getPath() . ".");
+        throw new \InvalidArgumentException("Invalid key - '$key' does not exist under " . $this->getPath() . ".");
     }
 
     /**
@@ -133,10 +132,12 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
     public function delete($key)
     {
         list($localKey, $remainderKey) = $this->getKeyParts($key);
-        if ($remainderKey!==null) {
+        if ($remainderKey !== null) {
+            //The given key points to an element on a subbranch - delegate the delete call to that subbranch.
             if (isset($this->values[$localKey]) && $this->values[$localKey] instanceof ParameterTree) {
                 $this->values[$localKey]->delete($remainderKey);
             }
+
             return;
         }
         if (isset($this->values[$localKey])) {
@@ -155,35 +156,33 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
     {
         list($localKey, $remainderKey) = $this->getKeyParts($key);
 
-        if ($remainderKey!==null) {
-            //Namespaced key
+        if ($remainderKey !== null) {
+            //The given key points to an element on a subbranch.
             if (!isset($this->values[$localKey]) || !($this->values[$localKey] instanceof ParameterTree)) {
-                $this->values[$localKey] = new ParameterTree($this->namespaceSeparator, $this);
+                //As we're pointing to a subbranch, make sure the ParameterTree object exists JIT.
+                $this->values[$localKey] = new ParameterTree([], $this->namespaceSeparator, $this->getLocalPath($localKey));
             }
+            //Delegate the set call to the subbranch object.
             $this->values[$localKey]->set($remainderKey, $value, $force);
+
             return;
         }
-        if (is_array($value)) {
-            if (count($value) > 0) {
-                foreach ($value as $valKey => $valValue) {
-                    $this->set($localKey . $this->namespaceSeparator . $valKey, $valValue, $force);
-                }
-            } else {
-                $this->values[$localKey] = new ParameterTree($this->namespaceSeparator, $this);
-            }
+        if (is_array($value) || $value instanceof \Traversable) {
+            $this->values[$localKey] = new ParameterTree($value, $this->namespaceSeparator, $this->getLocalPath($localKey));
+
             return;
         }
-        if (!$force && isset($this->values[$localKey]) && $this->values[$localKey] instanceof ParameterTree) {
-            throw new Exception(
-                "Tried to replace a ParameterTree branch (" . $this->getPath() . $this->namespaceSeparator . "$localKey) with a scalar value without specifying force=true."
+        if (!$force && isset($this->values[$localKey])) {
+            throw new ValueExistsException(
+                "Tried to override an existing value (" . $this->getPath() . $this->namespaceSeparator . "$localKey) without specifying force=true."
             );
         }
         $this->values[$localKey] = $value;
     }
 
     /**
-     * Slice a namespaced key taking the first fragment to be used as the key on the current branch, and the remainder
-     * to be passed down to subbranches
+     * Slice a namespaced key into the localKey (that is, the key part relevant to the current branch), and the
+     * remainderKey (if exists, which may be relevant to branches further down the hierarchy.
      * @param string $key
      * @return array
      */
@@ -194,6 +193,7 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
         if (strstr($key, $this->namespaceSeparator)) {
             list($localKey, $remainderKey) = explode(".", $key, 2);
         }
+
         return [$localKey, $remainderKey];
     }
 
@@ -204,13 +204,14 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
      */
     public function find($value)
     {
-        $key = $this->getKey($value);
+        $key = $this->findLocal($value);
         if ($key) {
             return $this->getPath() . $this->namespaceSeparator . $key;
         }
 
         foreach ($this->values as $branches) {
             if ($branches instanceof ParameterTree) {
+                //If a sub-branch returns a 'truthy' response we've found the value and should return it.
                 if (true == $key = $branches->find($value)) {
                     return $key;
                 }
@@ -235,15 +236,16 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
             //Check subbranch
             return $this->values[$localKey]->hasKey($remainderKey);
         }
+
         return false;
     }
 
     /**
-     * Fetch the key for a value stored on the current branch
+     * Search for the provided value as one of the immediate leaves of this branch (doesn't traverse sub-branches)
      * @param mixed $value
      * @return string The key of the value if it exists, false otherwise
      */
-    public function getKey($value)
+    public function findLocal($value)
     {
         return array_search($value, $this->values, true);
     }
@@ -255,24 +257,25 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
     public function getKeys()
     {
         $keys = [];
-        foreach ($this->values as $valueKey => $val) {
+        foreach ($this->values as $localKey => $val) {
             if ($val instanceof ParameterTree) {
                 $keys = array_merge($keys, $val->getKeys());
             } else {
-                $keys[] = $this->trimKey($this->getPath() . $this->namespaceSeparator . $valueKey);
+                $keys[] = $this->getLocalPath($localKey);
             }
         }
+
         return $keys;
     }
 
     /**
-     * Remove leading namespace character from returned key paths
-     * @param $key
+     * Get the absolute local path key for an item with the given localKey on this branch.
+     * @param string $localKey
      * @return string
      */
-    protected function trimKey($key)
+    protected function getLocalPath($localKey)
     {
-        return ltrim($key, $this->namespaceSeparator);
+        return implode($this->namespaceSeparator, array_filter([$this->path, $localKey]));
     }
 
     /**
@@ -281,12 +284,7 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
      */
     public function getPath()
     {
-        if (!$this->parentBranch) {
-            return "";
-        }
-        return $this->trimKey(
-            $this->parentBranch->getPath() . $this->namespaceSeparator . $this->parentBranch->getKey($this)
-        );
+        return $this->path;
     }
 
     /**
@@ -301,6 +299,7 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
                 $total += $value->count();
             }
         }
+
         return $total;
     }
 
@@ -347,6 +346,7 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
                 )
             );
         }
+
         return strval($value);
     }
 
@@ -410,7 +410,7 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
     {
         $this->delete($offset);
     }
-    
+
     /**
      * (PHP 5 &gt;= 5.4.0)<br/>
      * Specify data which should be serialized to JSON
@@ -423,6 +423,4 @@ class ParameterTree implements \ArrayAccess,  \JsonSerializable
     {
         return $this->toArray();
     }
-
-
 }

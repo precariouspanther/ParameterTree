@@ -1,15 +1,23 @@
 <?php
+namespace tests\unit;
+
+use Arcanum\ParameterTree\Exception\ValueExistsException;
+use Arcanum\ParameterTree\ParameterTree;
+use PHPUnit_Framework_TestCase;
+
 
 /**
  *
  * @author Adam Benson <adam@precariouspanther.net>
  * @copyright Arcanum Logic
+ * @coversDefaultClass Arcanum\ParameterTree\ParameterTree
  */
 class ParameterTreeTest extends PHPUnit_Framework_TestCase
 {
+
     public function testCreateFromArray()
     {
-        $tree = \Arcanum\ParameterTree\ParameterTree::CreateFromArray($this->getDummyArray());
+        $tree = new ParameterTree($this->getDummyArray());
 
         //Existing keys
         $this->assertTrue($tree->hasKey("test1"));
@@ -52,8 +60,8 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             [
 
-                "a" => ["b" => ["c" => 230, "c2" => "string"]],
-                "a2" => ["b" => ["c" => 220]],
+                "a"    => ["b" => ["c" => 230, "c2" => "string"]],
+                "a2"   => ["b" => ["c" => 220]],
                 "test" => [1 => 4, 2 => 30]
             ],
             $tree->toArray()
@@ -63,8 +71,8 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             [
 
-                "a" => ["b" => ["c2" => "string"]],
-                "a2" => ["b" => ["c" => 220]],
+                "a"    => ["b" => ["c2" => "string"]],
+                "a2"   => ["b" => ["c" => 220]],
                 "test" => [1 => 4, 2 => 30]
             ],
             $tree->toArray()
@@ -74,7 +82,7 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             [
 
-                "a" => ["b" => ["c2" => "string"]],
+                "a"  => ["b" => ["c2" => "string"]],
                 "a2" => ["b" => ["c" => 220]]
             ],
             $tree->toArray()
@@ -84,7 +92,7 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(
             [
 
-                "a" => [],
+                "a"  => [],
                 "a2" => ["b" => ["c" => 220]]
             ],
             $tree->toArray()
@@ -93,13 +101,13 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
 
     public function testCount()
     {
-        $tree = \Arcanum\ParameterTree\ParameterTree::CreateFromArray($this->getDummyArray());
+        $tree = new ParameterTree($this->getDummyArray());
         $this->assertEquals(7, $tree->count());
     }
 
     public function testFind()
     {
-        $tree = \Arcanum\ParameterTree\ParameterTree::CreateFromArray($this->getDummyArray());
+        $tree = new ParameterTree($this->getDummyArray());
 
         $this->assertEquals("key2.branch.subsub1", $tree->find("Test"));
         $this->assertNull($tree->find("TestDoesntExit"));
@@ -107,7 +115,7 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
 
     public function testArrayAccess()
     {
-        $tree = \Arcanum\ParameterTree\ParameterTree::CreateFromArray($this->getDummyArray());
+        $tree = new ParameterTree($this->getDummyArray());
 
         $this->assertNull($tree['bad.array.key']);
         $this->assertEquals(false, $tree['test1']);
@@ -125,7 +133,7 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
 
     public function testTypecast()
     {
-        $tree = new \Arcanum\ParameterTree\ParameterTree();
+        $tree = new ParameterTree();
         $tree->set("branch.val1", 0);
         $tree->set("branch.val2", "true");
         $tree->set("branch.val3", "5 apples");
@@ -137,29 +145,91 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($tree->getBoolean("branch.val3"));
         $this->assertFalse($tree->getBoolean("branch.val4"));
 
-        $this->assertEquals(5,$tree->getInt("branch.val3"));
+        $this->assertEquals(5, $tree->getInt("branch.val3"));
 
-        $this->assertEquals("0",$tree->getString("branch.val1"));
-        $this->assertEquals("true",$tree->getString("branch.val2"));
-        $this->assertEquals("5 apples",$tree->getString("branch.val3"));
-        $this->assertEquals("",$tree->getString("branch.val4"));
-        $this->assertEquals('!!!²blah',$tree->getString("branch.val5"));
+        $this->assertEquals("0", $tree->getString("branch.val1"));
+        $this->assertEquals("true", $tree->getString("branch.val2"));
+        $this->assertEquals("5 apples", $tree->getString("branch.val3"));
+        $this->assertEquals("", $tree->getString("branch.val4"));
+        $this->assertEquals('!!!²blah', $tree->getString("branch.val5"));
 
+    }
+
+
+    /**
+     * @covers ::getString
+     */
+    public function testGetString()
+    {
+        $tree = new ParameterTree();
+        $tree->set("branch.val1", 0);
+        $tree->set("branch.val2", "true");
+        $tree->set("branch.val3", "5 apples");
+        $tree->set("branch.val4", false);
+        $tree->set("branch.val5", '!!!²blah');
+
+        $this->assertEquals("0", $tree->getString("branch.val1"));
+        $this->assertEquals("true", $tree->getString("branch.val2"));
+        $this->assertEquals("5 apples", $tree->getString("branch.val3"));
+        $this->assertEquals("", $tree->getString("branch.val4"));
+        $this->assertEquals('!!!²blah', $tree->getString("branch.val5"));
+    }
+    
+    /**
+     * @covers ::toArray
+     */
+    public function testToArray()
+    {
+        $tree = new ParameterTree();
+        for ($x = 0; $x < 3; $x++) {
+            for ($y = 0; $y < 3; $y++) {
+                $tree->set("$x.$y", $x * $y);
+            }
+        }
+
+        $this->assertEquals([
+            0 => [0 => 0, 1 => 0, 2 => 0],
+            1 => [0 => 0, 1 => 1, 2 => 2],
+            2 => [0 => 0, 1 => 2, 2 => 4],
+        ], $tree->toArray());
     }
 
     /**
-     * @expectedException Exception
-     * @throws Exception
+     * @covers ::jsonSerialize
      */
-    public function testInvalidString(){
-        $tree = new \Arcanum\ParameterTree\ParameterTree();
-        $tree->set("trunk.branch.value",123);
+    public function testJsonSerialize()
+    {
+        /* Arrange */
+        $tree = new ParameterTree();
+        for ($x = 0; $x < 3; $x++) {
+            for ($y = 0; $y < 3; $y++) {
+                $tree->set("$x.$y", $x * $y);
+            }
+        }
+        /* Act */
+        $result = json_encode($tree);
+        /* Assert */
+        $this->assertEquals("[[0,0,0],[0,1,2],[0,2,4]]", $result);
+    }
+
+    /**
+     * @expectedException \Exception
+     * @throws \Exception
+     * @covers ::getString
+     */
+    public function testInvalidString()
+    {
+        $tree = new ParameterTree();
+        $tree->set("trunk.branch.value", 123);
         $tree->getString("trunk");
     }
 
+    /**
+     * @covers ::getKeys
+     */
     public function testGetKeys()
     {
-        $tree = \Arcanum\ParameterTree\ParameterTree::CreateFromArray($this->getDummyArray());
+        $tree = new ParameterTree($this->getDummyArray());
 
         $this->assertEquals(
             ["test1", "key2.subkey1", "key2.subkey4", "key2.branch.subsub1", "key2.branch.1"],
@@ -168,38 +238,40 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @throws Exception
-     * @expectedException Exception
+     * @throws \Arcanum\ParameterTree\Exception\ValueExistsException
+     * @expectedException \Arcanum\ParameterTree\Exception\ValueExistsException
+     * @covers ::set
      */
     public function testBranchProtection()
     {
-        $tree = \Arcanum\ParameterTree\ParameterTree::CreateFromArray($this->getDummyArray());
-        $tree->set("key2.branch", 321);
+        $tree = new ParameterTree(["chicken"=>1]);
+        $tree->set("chicken", 321);
     }
 
-    public
-    function testBranchProtectionForce()
+    /**
+     * @covers ::set
+     */
+    public function testBranchProtectionForce()
     {
-        $tree = \Arcanum\ParameterTree\ParameterTree::CreateFromArray($this->getDummyArray());
-        $tree->set("key2.branch", 321, true);
+        $tree = new ParameterTree(["chicken"=>1]);
+        $tree->set("chicken", 321, true);
 
-        $this->assertEquals(321, $tree->get("key2.branch"));
+        $this->assertEquals(321, $tree->get("chicken"));
     }
 
     /**
      * @return array
      */
-    private
-    function getDummyArray()
+    private function getDummyArray()
     {
         return [
             "test1" => false,
-            "key2" => [
+            "key2"  => [
                 "subkey1" => 45,
                 "subkey4" => 33,
-                "branch" => [
+                "branch"  => [
                     "subsub1" => "Test",
-                    1 => "Numeric"
+                    1         => "Numeric"
                 ]
             ]
         ];

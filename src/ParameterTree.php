@@ -33,7 +33,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
     {
         $this->namespaceSeparator = $namespaceSeparator;
         $this->path = $path;
-        $this->setFromArray($data);
+        $this->fromArray($data);
     }
 
     /**
@@ -41,7 +41,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
      * @param array|\Traversable $data
      * @throws Exception
      */
-    public function setFromArray($data)
+    public function fromArray($data)
     {
         foreach ($data as $arrayKey => $arrayValue) {
             $this->set($arrayKey, $arrayValue);
@@ -119,7 +119,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
                 return $localValue;
             }
         }
-        if ($this->values[$localKey] === null) {
+        if (array_key_exists($localKey, $this->values) && $this->values[$localKey] === null) {
             return null;
         }
         throw new \InvalidArgumentException("Invalid key - '$key' does not exist under " . $this->getPath() . ".");
@@ -160,7 +160,8 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
             //The given key points to an element on a subbranch.
             if (!isset($this->values[$localKey]) || !($this->values[$localKey] instanceof ParameterTree)) {
                 //As we're pointing to a subbranch, make sure the ParameterTree object exists JIT.
-                $this->values[$localKey] = new ParameterTree([], $this->namespaceSeparator, $this->getLocalPath($localKey));
+                $this->values[$localKey] = new ParameterTree([], $this->namespaceSeparator,
+                    $this->getLocalPath($localKey));
             }
             //Delegate the set call to the subbranch object.
             $this->values[$localKey]->set($remainderKey, $value, $force);
@@ -168,7 +169,8 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
             return;
         }
         if (is_array($value) || $value instanceof \Traversable) {
-            $this->values[$localKey] = new ParameterTree($value, $this->namespaceSeparator, $this->getLocalPath($localKey));
+            $this->values[$localKey] = new ParameterTree($value, $this->namespaceSeparator,
+                $this->getLocalPath($localKey));
 
             return;
         }

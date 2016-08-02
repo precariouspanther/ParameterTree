@@ -1,7 +1,6 @@
 <?php
 namespace tests\unit;
 
-use Arcanum\ParameterTree\Exception\ValueExistsException;
 use Arcanum\ParameterTree\ParameterTree;
 use PHPUnit_Framework_TestCase;
 
@@ -131,6 +130,60 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
 
     }
 
+    /**
+     * @covers ::getBranch
+     */
+    public function testGetBranch()
+    {
+        $tree = new ParameterTree([
+            "test1"  => false,
+            "nulled" => null,
+            "key2"   => [
+                "subkey1" => 45,
+                "subkey4" => 33,
+                "branch"  => [
+                    "subsub1" => "Test",
+                    1         => "Numeric"
+                ]
+            ]
+        ]);
+
+        $branch = $tree->getBranch("key2");
+        $subbranch = $tree->getBranch("key2.branch");
+
+        $this->assertInstanceOf(ParameterTree::class, $branch);
+        $this->assertEquals(45, $branch->get("subkey1"));
+        $this->assertEquals('Test', $branch->get("branch.subsub1"));
+
+        $this->assertInstanceOf(ParameterTree::class, $subbranch);
+        $this->assertEquals("Test", $subbranch->get("subsub1"));
+        $this->assertNull($tree->getBranch("nulled"), "nulled key should return null if set to null instead of a null branch");
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testGetBranchScalar(){
+        $tree = new ParameterTree($this->getDummyArray());
+        $tree->getBranch("test1");
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testGetBranchMissingSubbranch(){
+        $tree = new ParameterTree($this->getDummyArray());
+        $tree->getBranch("test1.test2");
+    }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testGetBranchMissing(){
+        $tree = new ParameterTree($this->getDummyArray());
+        $tree->getBranch("missing");
+    }
+
     public function testTypecast()
     {
         $tree = new ParameterTree();
@@ -174,7 +227,7 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals("", $tree->getString("branch.val4"));
         $this->assertEquals('!!!²blah', $tree->getString("branch.val5"));
     }
-    
+
     /**
      * @covers ::toArray
      */
@@ -244,7 +297,7 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
      */
     public function testBranchProtection()
     {
-        $tree = new ParameterTree(["chicken"=>1]);
+        $tree = new ParameterTree(["chicken" => 1]);
         $tree->set("chicken", 321);
     }
 
@@ -253,7 +306,7 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
      */
     public function testBranchProtectionForce()
     {
-        $tree = new ParameterTree(["chicken"=>1]);
+        $tree = new ParameterTree(["chicken" => 1]);
         $tree->set("chicken", 321, true);
 
         $this->assertEquals(321, $tree->get("chicken"));

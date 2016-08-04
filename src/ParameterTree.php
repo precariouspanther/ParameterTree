@@ -17,7 +17,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
      */
     protected $values = [];
 
-    protected $path = "";
+    protected $path = null;
     /**
      * The namespace to use to separate tree branches (defaults to ".")
      * @var string
@@ -29,7 +29,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
      * @param string $namespaceSeparator The namespace to use to separate tree branches (defaults to ".")
      * @param string $path Optional path to this branch relative to the tree root.
      */
-    public function __construct($data = [], string $namespaceSeparator = ".", string $path = "")
+    public function __construct($data = [], string $namespaceSeparator = ".", string $path = null)
     {
         $this->namespaceSeparator = $namespaceSeparator;
         $this->path = $path;
@@ -102,7 +102,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
         list($localKey, $remainderKey) = $this->getKeyParts($key);
         if (isset($this->values[$localKey])) {
             $localValue = $this->values[$localKey];
-            if ($remainderKey) {
+            if ($remainderKey !== null) {
                 //We have a subkey, traverse down the ParameterTree to find the requested branch
                 if (!$localValue instanceof ParameterTree) {
                     //Requested subbranch doesn't exist
@@ -161,7 +161,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
             if (!isset($this->values[$localKey]) || !($this->values[$localKey] instanceof ParameterTree)) {
                 //As we're pointing to a subbranch, make sure the ParameterTree object exists JIT.
                 $this->values[$localKey] = new ParameterTree([], $this->namespaceSeparator,
-                    $this->getLocalPath($localKey));
+                    $this->getValuePath($localKey));
             }
             //Delegate the set call to the subbranch object.
             $this->values[$localKey]->set($remainderKey, $value, $force);
@@ -170,7 +170,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
         }
         if (is_array($value) || $value instanceof \Traversable) {
             $this->values[$localKey] = new ParameterTree($value, $this->namespaceSeparator,
-                $this->getLocalPath($localKey));
+                $this->getValuePath($localKey));
 
             return;
         }
@@ -263,7 +263,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
             if ($val instanceof ParameterTree) {
                 $keys = array_merge($keys, $val->getKeys());
             } else {
-                $keys[] = $this->getLocalPath($localKey);
+                $keys[] = $this->getValuePath($localKey);
             }
         }
 
@@ -275,9 +275,17 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
      * @param string $localKey
      * @return string
      */
-    protected function getLocalPath($localKey)
+    protected function getValuePath($localKey)
     {
-        return implode($this->namespaceSeparator, array_filter([$this->path, $localKey]));
+        $paths = [];
+        if ($this->path !== null) {
+            $paths[] = $this->path;
+        }
+        if ($localKey !== null) {
+            $paths[] = $localKey;
+        }
+
+        return implode($this->namespaceSeparator, $paths);
     }
 
     /**

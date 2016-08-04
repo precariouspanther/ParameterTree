@@ -157,13 +157,15 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
 
         $this->assertInstanceOf(ParameterTree::class, $subbranch);
         $this->assertEquals("Test", $subbranch->get("subsub1"));
-        $this->assertNull($tree->getBranch("nulled"), "nulled key should return null if set to null instead of a null branch");
+        $this->assertNull($tree->getBranch("nulled"),
+            "nulled key should return null if set to null instead of a null branch");
     }
 
     /**
      * @expectedException \InvalidArgumentException
      */
-    public function testGetBranchScalar(){
+    public function testGetBranchScalar()
+    {
         $tree = new ParameterTree($this->getDummyArray());
         $tree->getBranch("test1");
     }
@@ -171,7 +173,8 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
     /**
      * @expectedException \InvalidArgumentException
      */
-    public function testGetBranchMissingSubbranch(){
+    public function testGetBranchMissingSubbranch()
+    {
         $tree = new ParameterTree($this->getDummyArray());
         $tree->getBranch("test1.test2");
     }
@@ -179,7 +182,8 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
     /**
      * @expectedException \InvalidArgumentException
      */
-    public function testGetBranchMissing(){
+    public function testGetBranchMissing()
+    {
         $tree = new ParameterTree($this->getDummyArray());
         $tree->getBranch("missing");
     }
@@ -205,6 +209,33 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         $this->assertEquals("5 apples", $tree->getString("branch.val3"));
         $this->assertEquals("", $tree->getString("branch.val4"));
         $this->assertEquals('!!!²blah', $tree->getString("branch.val5"));
+
+    }
+
+    public function testFalseyKey()
+    {
+        $tree = new ParameterTree([
+            0        => [
+                "abc" => 123
+            ],
+            "fruits" => [
+                ["name" => "Apple", "colour" => "green"],
+                ["name" => "Orange", "colour" => "Orange"],
+                ["name" => "Banana", "colour" => "Yellow"],
+            ]
+        ]);
+
+        $appleBranch = $tree->getBranch("fruits.0");
+
+        $this->assertInstanceOf(ParameterTree::class, $appleBranch);
+        $this->assertEquals("Apple", $appleBranch->get("name"));
+        $this->assertEquals("Apple", $tree->get("fruits.0.name"));
+        $this->assertEquals("Orange", $tree->get("fruits.1.name"));
+        $this->assertEquals("fruits.0",$appleBranch->getPath());
+        $this->assertTrue($tree->hasKey("fruits.0"));
+        $this->assertFalse($tree->hasKey("fruits.8"));
+        $this->assertTrue($appleBranch->hasKey("name"));
+        $this->assertFalse($appleBranch->hasKey("sweetness"));
 
     }
 

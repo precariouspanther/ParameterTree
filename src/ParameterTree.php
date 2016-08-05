@@ -7,8 +7,9 @@
 
 namespace Arcanum\ParameterTree;
 
+use Arcanum\ParameterTree\Exception\MissingValueException;
 use Arcanum\ParameterTree\Exception\ValueExistsException;
-use Exception;
+
 
 class ParameterTree implements \ArrayAccess, \JsonSerializable
 {
@@ -39,7 +40,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
     /**
      * Set the local values in this tree from an array/Traversable object
      * @param array|\Traversable $data
-     * @throws Exception
+     * @throws \Exception
      */
     public function fromArray($data)
     {
@@ -106,14 +107,14 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
                 //We have a subkey, traverse down the ParameterTree to find the requested branch
                 if (!$localValue instanceof ParameterTree) {
                     //Requested subbranch doesn't exist
-                    throw new \InvalidArgumentException("Invalid key - '$key' does not exist under " . $this->getPath() . ".");
+                    throw new MissingValueException("Invalid key - '$key' does not exist under " . $this->getPath() . ".");
                 }
 
                 return $localValue->getBranch($remainderKey);
             } else {
                 //We are accessing the value on this branch.
                 if (!($localValue instanceof ParameterTree)) {
-                    throw new \InvalidArgumentException("Invalid key - '$key' is a value, not a branch - under " . $this->getPath() . ".");
+                    throw new MissingValueException("Invalid key - '$key' is a value, not a branch - under " . $this->getPath() . ".");
                 }
 
                 return $localValue;
@@ -122,7 +123,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
         if (array_key_exists($localKey, $this->values) && $this->values[$localKey] === null) {
             return null;
         }
-        throw new \InvalidArgumentException("Invalid key - '$key' does not exist under " . $this->getPath() . ".");
+        throw new MissingValueException("Invalid key - '$key' does not exist under " . $this->getPath() . ".");
     }
 
     /**
@@ -150,7 +151,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
      * @param string $key Key to store the value in, relative to the current branch
      * @param mixed|mixed[] $value Value to store. Will create a subbranch if passed an array
      * @param bool $force Overwrite the existing value even if it is a branch itself (usually not intended)
-     * @throws Exception
+     * @throws ValueExistsException
      */
     public function set($key, $value, $force = false)
     {
@@ -344,13 +345,13 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
      * @param string $key
      * @param string $default
      * @return string
-     * @throws Exception
+     * @throws \Exception
      */
     public function getString($key, $default = '')
     {
         $value = $this->get($key, $default);
         if (!is_scalar($value)) {
-            throw new Exception(
+            throw new \Exception(
                 "Requested $key as a string from ParameterTree but the stored value for this key is a " . gettype(
                     $value
                 )

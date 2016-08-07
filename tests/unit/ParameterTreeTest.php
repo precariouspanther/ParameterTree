@@ -162,7 +162,7 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException \Arcanum\ParameterTree\Exception\MissingValueException
      */
     public function testGetBranchScalar()
     {
@@ -170,8 +170,12 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         $tree->getBranch("test1");
     }
 
+    public function testBroken(){
+        $this->assertTrue(false);
+    }
+
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException \Arcanum\ParameterTree\Exception\MissingValueException
      */
     public function testGetBranchMissingSubbranch()
     {
@@ -180,7 +184,7 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException \Arcanum\ParameterTree\Exception\MissingValueException
      */
     public function testGetBranchMissing()
     {

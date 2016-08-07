@@ -203,11 +203,11 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
     /**
      * Find a value somewhere relative to the current branch and return its full path
      * @param mixed $value
-     * @return string
+     * @return string The key path for the found value relative to the current branch.
      */
     public function find($value)
     {
-        $key = $this->findLocal($value);
+        $key = $this->findLocalKey($value);
         if ($key) {
             return $this->getPath() . $this->namespaceSeparator . $key;
         }
@@ -248,7 +248,7 @@ class ParameterTree implements \ArrayAccess, \JsonSerializable
      * @param mixed $value
      * @return string The key of the value if it exists, false otherwise
      */
-    public function findLocal($value)
+    protected function findLocalKey($value)
     {
         return array_search($value, $this->values, true);
     }

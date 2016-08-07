@@ -170,10 +170,6 @@ class ParameterTreeTest extends PHPUnit_Framework_TestCase
         $tree->getBranch("test1");
     }
 
-    public function testBroken(){
-        $this->assertTrue(false);
-    }
-
     /**
      * @expectedException \Arcanum\ParameterTree\Exception\MissingValueException
      */

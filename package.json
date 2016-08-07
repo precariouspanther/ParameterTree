@@ -1,0 +1,25 @@
+{
+  "name": "parametertree",
+  "version": "1.0.0",
+  "description": "ParameterTree is a multi-dimensional, namespaced parameter bag simplifying access to multidimensional arrays  (such as configs, GET/POST/SESSION params, etc), with default return values and typecasting.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/precariouspanther/ParameterTree.git"
+  },
+  "author": "adam@precariouspanther.net",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/precariouspanther/ParameterTree/issues"
+  },
+  "homepage": "https://github.com/precariouspanther/ParameterTree#readme",
+  "dependencies": {
+    "node-notifier": "^4.6.0"
+  }
+}

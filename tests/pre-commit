@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+"vendor/bin/phpunit" --colors=always --bootstrap "tests/bootstrap.php" "tests/unit"
+if [ $? -eq 0 ]
+then
+  echo "All unit tests successfully passed."
+else
+  node tests/commit-fail.js
+  exit 0
+fi

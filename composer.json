@@ -1,21 +1,23 @@
 {
-  "name": "arcanum/parameter-tree",
-  "description": "Namespaced accessors for multi-dimensional trees of parameters (such as POST/GET, config, etc)",
-  "minimum-stability": "stable",
-  "license": "MIT",
-  "require": {
-    "php": ">=5.4"
-  },
-  "autoload": {
-    "psr-4": {
-      "Arcanum\\ParameterTree\\": "src/"
-    }
-  },
-  "authors": [
-    {
-      "name": "Adam Benson",
-      "email": "adam@precariouspanther.net"
-    }
-  ]
-
+    "name": "arcanum/parameter-tree",
+    "description": "Namespaced accessors for multi-dimensional trees of parameters (such as POST/GET, config, etc)",
+    "minimum-stability": "stable",
+    "license": "MIT",
+    "require": {
+        "php": ">=5.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "@stable"
+    },
+    "autoload": {
+        "psr-4": {
+            "Arcanum\\ParameterTree\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Adam Benson",
+            "email": "adam@precariouspanther.net"
+        }
+    ]
 }
